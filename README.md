@@ -6,8 +6,8 @@ A standalone investment analysis dashboard built for a 2–3 month trading horiz
 
 ## Live Demo
 
-> **[https://yourusername.github.io/ods-dashboard](https://yourusername.github.io/ods-dashboard)**  
-> *(replace with your actual GitHub Pages URL after deploying)*
+> **(https://buynowllc.github.io/Stocks_Tool/)**  
+> *(https://buynowllc.github.io/Stocks_Tool/)*
 
 ---
 
