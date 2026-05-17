@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODS Investors — Investment Analysis Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f2;--bg3:#eeede9;
+  --tx:#1a1a18;--tx2:#6b6b67;--tx3:#9a9a96;
+  --bd:rgba(0,0,0,0.1);--bd2:rgba(0,0,0,0.18);
+  --blue:#378ADD;--blue-dk:#0C447C;--blue-bg:#E6F1FB;--blue-tx:#0C447C;
+  --green:#639922;--green-bg:#EAF3DE;--green-tx:#27500A;
+  --gray:#888780;--gray-bg:#F1EFE8;--gray-tx:#444441;
+  --amber:#BA7517;--amber-bg:#FAEEDA;--amber-tx:#633806;
+  --red:#E24B4A;--red-bg:#FCEBEB;--red-tx:#791F1F;
+  --r-md:8px;--r-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1c;--bg2:#2a2a28;--bg3:#141412;
+    --tx:#f0efe9;--tx2:#a8a8a2;--tx3:#6b6b67;
+    --bd:rgba(255,255,255,0.1);--bd2:rgba(255,255,255,0.18);
+    --blue-bg:#042C53;--blue-tx:#B5D4F4;
+    --green-bg:#173404;--green-tx:#C0DD97;
+    --gray-bg:#2C2C2A;--gray-tx:#D3D1C7;
+    --amber-bg:#412402;--amber-tx:#FAC775;
+    --red-bg:#501313;--red-tx:#F7C1C1;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg3);color:var(--tx);min-height:100vh;line-height:1.5;font-size:14px}
+
+/* HEADER */
+header{background:var(--bg);border-bottom:0.5px solid var(--bd);padding:0.875rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100}
+.logo-svg{height:40px;width:auto}
+.header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header-meta{font-size:11px;color:var(--tx3)}
+.badge-disclaimer{font-size:10px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--bd2);color:var(--tx3);background:var(--bg2)}
+
+/* LAYOUT */
+.container{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 3rem}
+.section-label{font-size:10px;font-weight:500;color:var(--tx3);letter-spacing:0.09em;text-transform:uppercase;margin-bottom:10px}
+
+/* METRICS */
+.metric-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem}
+.metric{background:var(--bg2);border-radius:var(--r-md);padding:14px 16px}
+.metric-val{font-size:24px;font-weight:500;color:var(--tx);line-height:1}
+.metric-lbl{font-size:11px;color:var(--tx2);margin-top:4px}
+.metric-sub{font-size:10px;color:var(--tx3);margin-top:2px}
+
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem}
+.chart-card{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r-lg);padding:1.25rem}
+.chart-title{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px}
+.chart-sub{font-size:11px;color:var(--tx2);margin-bottom:10px}
+.legend-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--tx2)}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* FILTERS */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.search-input{font-size:12px;padding:6px 12px;border:0.5px solid var(--bd2);border-radius:var(--r-md);background:var(--bg);color:var(--tx);width:220px;font-family:inherit;outline:none}
+.search-input:focus{border-color:var(--blue)}
+.filter-btn{font-size:11px;padding:5px 12px;border:0.5px solid var(--bd2);border-radius:20px;background:var(--bg);color:var(--tx2);cursor:pointer;font-family:inherit;transition:all 0.12s}
+.filter-btn.active{background:var(--bg2);color:var(--tx);font-weight:500}
+.filter-btn:hover{background:var(--bg2)}
+.sort-select{font-size:11px;padding:5px 10px;border:0.5px solid var(--bd2);border-radius:var(--r-md);background:var(--bg);color:var(--tx2);font-family:inherit;cursor:pointer;outline:none}
+
+/* TABLE */
+.table-card{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r-lg);overflow:hidden;margin-bottom:1.5rem}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{font-size:10px;font-weight:500;color:var(--tx2);border-bottom:0.5px solid var(--bd);padding:8px 12px;text-align:left;white-space:nowrap;background:var(--bg);cursor:pointer;user-select:none}
+thead th:hover{color:var(--tx)}
+thead th.sorted{color:var(--blue-dk)}
+tbody tr{border-bottom:0.5px solid var(--bd);cursor:pointer;transition:background 0.1s}
+tbody tr:hover{background:var(--bg2)}
+tbody tr.expanded{background:var(--bg2)}
+tbody td{padding:9px 12px;color:var(--tx);vertical-align:middle}
+.ticker-lbl{font-weight:500;font-size:13px;font-family:'SF Mono','Fira Code','Courier New',monospace}
+.company-lbl{font-size:10px;color:var(--tx2);margin-top:1px}
+.sector-tag{font-size:10px;color:var(--tx3)}
+
+/* BADGE */
+.badge{display:inline-block;font-size:9px;font-weight:500;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.b1{background:var(--blue-bg);color:var(--blue-tx)}
+.b2{background:var(--green-bg);color:var(--green-tx)}
+.b3{background:var(--gray-bg);color:var(--gray-tx)}
+.b4{background:var(--amber-bg);color:var(--amber-tx)}
+.b5{background:var(--red-bg);color:var(--red-tx)}
+
+/* UPSIDE BAR */
+.ubar-wrap{display:flex;align-items:center;gap:6px}
+.ubar-bg{flex:1;height:4px;background:var(--bd);border-radius:2px;min-width:40px}
+.ubar-fill{height:4px;border-radius:2px}
+.ubar-val{font-size:11px;color:var(--tx2);min-width:38px;text-align:right}
+
+/* EXPAND PANEL */
+.expand-row{display:none}
+.expand-row.open{display:table-row}
+.expand-cell{padding:0 12px 16px;background:var(--bg2)}
+.expand-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-top:12px}
+.exp-block{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r-md);padding:12px}
+.exp-label{font-size:9px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.exp-text{font-size:11px;color:var(--tx2);line-height:1.5}
+.exp-block.s{border-left:2px solid var(--green)}
+.exp-block.w{border-left:2px solid var(--red)}
+.exp-block.o{border-left:2px solid var(--blue)}
+.exp-block.t{border-left:2px solid var(--amber)}
+.exp-full{grid-column:1/-1;background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r-md);padding:12px}
+.exp-two{grid-column:span 2}
+.competitor-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg3);color:var(--tx2);border:0.5px solid var(--bd)}
+.priority-pip{display:inline-flex;gap:3px}
+.pip{width:8px;height:8px;border-radius:50%;background:var(--bd2)}
+.pip.on{background:var(--blue)}
+.outlook-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+
+/* EMPTY */
+.empty{text-align:center;color:var(--tx3);font-size:12px;padding:2.5rem 0}
+
+/* DISCLAIMER */
+.disclaimer{margin-top:1.5rem;padding:1rem 1.25rem;border:0.5px solid var(--bd);border-radius:var(--r-md);background:var(--bg2);font-size:10px;color:var(--tx3);line-height:1.6}
+
+/* TABS */
+.tab-nav{display:flex;gap:0;border-bottom:0.5px solid var(--bd);margin-bottom:1.5rem;margin-top:1.25rem;overflow-x:auto}
+.tab-btn{font-size:12px;font-weight:500;padding:10px 18px;border:none;background:none;color:var(--tx2);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.15s;position:relative;top:0.5px}
+.tab-btn:hover{color:var(--tx)}
+.tab-btn.active{color:var(--blue-dk);border-bottom-color:var(--blue)}
+.tab-btn.shortlist-tab{color:var(--amber)}
+.tab-btn.shortlist-tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+.tab-btn.shortlist-tab .tab-star{margin-right:5px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* SHORTLIST CARDS */
+.shortlist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:1.5rem}
+.sl-card{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--r-lg);padding:1.25rem;position:relative;overflow:hidden;transition:box-shadow 0.15s}
+.sl-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+.sl-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sl-card.rank-1::before{background:linear-gradient(90deg,#E07820,#FAC775)}
+.sl-card.rank-2::before{background:linear-gradient(90deg,#378ADD,#85B7EB)}
+.sl-card.rank-3::before{background:linear-gradient(90deg,#639922,#C0DD97)}
+.sl-card.rank-4::before{background:linear-gradient(90deg,#185FA5,#378ADD)}
+.sl-card.rank-5::before{background:linear-gradient(90deg,#444441,#888780)}
+.sl-card.rank-6::before{background:linear-gradient(90deg,#791F1F,#BA7517)}
+.sl-rank{font-size:10px;font-weight:500;color:var(--tx3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px}
+.sl-ticker{font-size:22px;font-weight:600;font-family:'SF Mono','Fira Code','Courier New',monospace;color:var(--tx);letter-spacing:-0.5px}
+.sl-name{font-size:11px;color:var(--tx2);margin-top:2px;margin-bottom:10px}
+.sl-price{font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px}
+.sl-price-sub{font-size:10px;color:var(--tx3);margin-bottom:12px}
+.sl-upside{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--green);background:var(--green-bg);padding:3px 9px;border-radius:10px;margin-bottom:10px}
+.sl-divider{height:0.5px;background:var(--bd);margin:10px 0}
+.sl-label{font-size:9px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.sl-text{font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:10px}
+.sl-catalyst{font-size:11px;color:var(--tx2);line-height:1.5}
+.sl-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sl-tag{font-size:9px;padding:2px 7px;border-radius:4px;background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx3)}
+.sl-warn{background:var(--amber-bg);border:0.5px solid var(--amber);border-radius:var(--r-md);padding:8px 10px;font-size:10px;color:var(--amber-tx);margin-top:10px;line-height:1.5}
+.shortlist-note{background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--r-md);padding:12px 16px;font-size:11px;color:var(--tx2);margin-bottom:1.25rem;line-height:1.6}
+.shortlist-note strong{color:var(--tx)}
+
+/* RESPONSIVE */
+@media(max-width:900px){.metric-row{grid-template-columns:repeat(3,1fr)}.charts-row{grid-template-columns:1fr}.expand-inner{grid-template-columns:1fr 1fr}.exp-two{grid-column:span 2}.shortlist-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.metric-row{grid-template-columns:repeat(2,1fr)}.container{padding:1rem}.expand-inner{grid-template-columns:1fr}.exp-two{grid-column:1/-1}.shortlist-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <!-- ODS Investors Logo -->
+  <svg class="logo-svg" viewBox="0 0 340 50" role="img" xmlns="http://www.w3.org/2000/svg">
+    <title>ODS Investors</title>
+    <style>
+      .lmh{fill:#0C447C}.lmi{fill:#378ADD}.lmn{fill:#85B7EB}.lml{stroke:#85B7EB;stroke-width:1.2;fill:none}
+      .lwa{font-family:'SF Mono','Fira Code','Courier New',monospace;font-size:22px;font-weight:700;fill:#0C447C;letter-spacing:-0.5px}
+      .lwb{font-family:'SF Mono','Fira Code','Courier New',monospace;font-size:8px;font-weight:400;fill:#185FA5;letter-spacing:2.5px}
+      .lac{fill:#378ADD}
+      @media(prefers-color-scheme:dark){.lmh{fill:#042C53}.lmi{fill:#185FA5}.lmn{fill:#378ADD}.lml{stroke:#378ADD}.lwa{fill:#B5D4F4}.lwb{fill:#85B7EB}.lac{fill:#378ADD}}
+    </style>
+    <g transform="translate(25,25)">
+      <polygon class="lmh" points="0,-22 19,-11 19,11 0,22 -19,11 -19,-22"/>
+      <polygon class="lmi" points="0,-14 12,-7 12,7 0,14 -12,7 -12,-14"/>
+      <line class="lml" x1="0" y1="-22" x2="0" y2="-14"/>
+      <line class="lml" x1="19" y1="-11" x2="12" y2="-7"/>
+      <line class="lml" x1="19" y1="11" x2="12" y2="7"/>
+      <line class="lml" x1="0" y1="22" x2="0" y2="14"/>
+      <line class="lml" x1="-19" y1="11" x2="-12" y2="7"/>
+      <line class="lml" x1="-19" y1="-11" x2="-12" y2="-7"/>
+      <line class="lml" x1="0" y1="-14" x2="12" y2="-7"/>
+      <line class="lml" x1="12" y1="-7" x2="12" y2="7"/>
+      <line class="lml" x1="12" y1="7" x2="0" y2="14"/>
+      <line class="lml" x1="0" y1="14" x2="-12" y2="7"/>
+      <line class="lml" x1="-12" y1="7" x2="-12" y2="-7"/>
+      <line class="lml" x1="-12" y1="-7" x2="0" y2="-14"/>
+      <circle class="lmn" cx="0" cy="-22" r="2"/>
+      <circle class="lmn" cx="19" cy="-11" r="2"/>
+      <circle class="lmn" cx="19" cy="11" r="2"/>
+      <circle class="lmn" cx="0" cy="22" r="2"/>
+      <circle class="lmn" cx="-19" cy="11" r="2"/>
+      <circle class="lmn" cx="-19" cy="-11" r="2"/>
+      <circle class="lac" cx="0" cy="0" r="3.5"/>
+      <text class="lwa" x="30" y="8" text-anchor="start">ODS</text>
+      <text class="lwb" x="32" y="19" text-anchor="start">INVESTORS</text>
+      <rect class="lac" x="32" y="22" width="28" height="1.5" rx="0.75"/>
+    </g>
+  </svg>
+  <div class="header-right">
+    <span class="header-meta">2–3 month horizon &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; 102 stocks</span>
+    <span class="badge-disclaimer">NOT FINANCIAL ADVICE</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- TAB NAV -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="explorer">Stock Explorer</button>
+    <button class="tab-btn shortlist-tab" data-tab="shortlist"><span class="tab-star">★</span>Kamran's Shortlisted</button>
+  </nav>
+
+  <!-- TAB: OVERVIEW -->
+  <div class="tab-panel active" id="tab-overview">
+  <div class="section-label">Overview</div>
+  <div class="metric-row">
+    <div class="metric"><div class="metric-val">102</div><div class="metric-lbl">Stocks analyzed</div><div class="metric-sub">Across 18 sectors</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--blue)">21</div><div class="metric-lbl">Aggressive entry</div><div class="metric-sub">Rating 1 — act now</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--green)">50</div><div class="metric-lbl">Accumulate</div><div class="metric-sub">Rating 2 — add on dips</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--amber)">~42%</div><div class="metric-lbl">Avg upside</div><div class="metric-sub">Rating 1 midpoint</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--red)">5</div><div class="metric-lbl">Don't buy</div><div class="metric-sub">Rating 5 — avoid</div></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Conviction breakdown</div>
+      <div class="chart-sub">All 102 stocks by rating tier</div>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-dot" style="background:#378ADD"></span>Aggressive entry (21)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#639922"></span>Accumulate (50)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#888780"></span>Hold (26)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#BA7517"></span>Reduce (7)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#E24B4A"></span>Don't buy (5)</span>
+      </div>
+      <div style="position:relative;height:170px"><canvas id="convChart" role="img" aria-label="Conviction breakdown doughnut chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Top sectors — high conviction picks</div>
+      <div class="chart-sub">Rating 1 + 2 stocks per broad sector</div>
+      <div style="position:relative;height:220px"><canvas id="sectorChart" role="img" aria-label="Sector bar chart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:1.5rem">
+    <div class="chart-title">Average upside by conviction tier</div>
+    <div class="chart-sub">Midpoint of stated upside range, averaged per rating group</div>
+    <div class="legend-row">
+      <span class="legend-item"><span class="legend-dot" style="background:#378ADD"></span>Rating 1</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#639922"></span>Rating 2</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#888780"></span>Rating 3+</span>
+    </div>
+    <div style="position:relative;height:160px"><canvas id="upsideChart" role="img" aria-label="Upside by tier bar chart"></canvas></div>
+  </div>
+
+  </div><!-- /tab-overview -->
+
+  <!-- TAB: EXPLORER -->
+  <div class="tab-panel" id="tab-explorer">
+  <div class="section-label">Stock explorer — click any row for full analysis</div>
+  <div class="toolbar">
+    <input class="search-input" id="searchInput" type="text" placeholder="Search ticker, company, sector, catalyst…">
+    <button class="filter-btn active" data-r="all">All</button>
+    <button class="filter-btn" data-r="1">Rating 1</button>
+    <button class="filter-btn" data-r="2">Rating 2</button>
+    <button class="filter-btn" data-r="3">Rating 3</button>
+    <button class="filter-btn" data-r="45">Reduce / Avoid</button>
+    <select class="sort-select" id="sortSelect">
+      <option value="rating">Sort: Rating</option>
+      <option value="upside">Sort: Upside ↓</option>
+      <option value="ticker">Sort: Ticker A–Z</option>
+      <option value="outlook">Sort: Outlook</option>
+    </select>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Sector</th>
+            <th>Outlook</th>
+            <th>Priority</th>
+            <th>Rating</th>
+            <th>Action</th>
+            <th>Upside</th>
+            <th>Competitor</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg" style="display:none">No stocks match your filter.</div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This dashboard is for informational purposes only and does not constitute investment, legal, or financial advice. All investments carry risk of loss. Past performance does not guarantee future results. Always conduct your own due diligence and consult a licensed financial advisor before investing. Data based on public filings, analyst consensus, and earnings reports as of May 2026. Tickers BLSH, ANPA, NAVN, WYFI are unverified — research before trading.
+  </div>
+  </div><!-- /tab-explorer -->
+
+  <!-- TAB: KAMRAN'S SHORTLIST -->
+  <div class="tab-panel" id="tab-shortlist">
+
+    <div class="shortlist-note">
+      <strong>Kamran's Shortlisted — 6 Top Performers</strong> &nbsp;·&nbsp; Curated May 13, 2026 &nbsp;·&nbsp;
+      Hand-picked from Rating 1 stocks currently showing strong price momentum, analyst upgrades, and near-term catalysts. Prices sourced from live market data.
+    </div>
+
+    <div class="shortlist-grid">
+
+      <!-- 1. CRDO -->
+      <div class="sl-card rank-1">
+        <div class="sl-rank">#1 Pick</div>
+        <div class="sl-ticker">CRDO</div>
+        <div class="sl-name">Credo Technology Group</div>
+        <div class="sl-price">~$183</div>
+        <div class="sl-price-sub">52-week range: $55.75 – $213.80</div>
+        <div class="sl-upside">↑ 40–60% upside target</div>
+        <div class="sl-divider"></div>
+        <div class="sl-label">Why now</div>
+        <div class="sl-text">Revenue +201% QoQ. Strong Buy from 18 analysts, median PT $200. DustPhotonics acquisition adds optical capability. Stock jumped 18% in April on the deal.</div>
+        <div class="sl-label">Key catalyst</div>
+        <div class="sl-catalyst">Amazon NVL cluster AEC design-wins; Q4 FY2026 revenue $200M+ expected; next earnings Jun 1, 2026.</div>
+        <div class="sl-tags">
+          <span class="sl-tag">Semiconductors</span><span class="sl-tag">AI Ethernet</span><span class="sl-tag">Rating 1</span>
+        </div>
+      </div>
+
+      <!-- 2. NBIS -->
+      <div class="sl-card rank-2">
+        <div class="sl-rank">#2 Pick</div>
+        <div class="sl-ticker">NBIS</div>
+        <div class="sl-name">Nebius Group</div>
+        <div class="sl-price">~$174</div>
+        <div class="sl-price-sub">52-week range: $31.13 – $197.89</div>
+        <div class="sl-upside">↑ 40–65% upside target</div>
+        <div class="sl-divider"></div>
+        <div class="sl-label">Why now</div>
+        <div class="sl-text">+110% YTD as of May 2026. BofA raised PT to $205. NVIDIA-backed European AI cloud with sovereign AI tailwinds. Eigen AI acquisition strengthens inference platform.</div>
+        <div class="sl-label">Key catalyst</div>
+        <div class="sl-catalyst">Q1 2026 earnings released May 13, 2026 — today. Revenue $700M+ expected for FY2026. EU AI Act driving demand.</div>
+        <div class="sl-tags">
+          <span class="sl-tag">AI Cloud</span><span class="sl-tag">Europe</span><span class="sl-tag">Rating 1</span>
+        </div>
+        <div class="sl-warn">⚡ Earnings today — elevated volatility expected</div>
+      </div>
+
+      <!-- 3. ALAB -->
+      <div class="sl-card rank-3">
+        <div class="sl-rank">#3 Pick</div>
+        <div class="sl-ticker">ALAB</div>
+        <div class="sl-name">Astera Labs</div>
+        <div class="sl-price">~$204</div>
+        <div class="sl-price-sub">52-week range: $76.53 – $262.90</div>
+        <div class="sl-upside">↑ 35–55% upside target</div>
+        <div class="sl-divider"></div>
+        <div class="sl-label">Why now</div>
+        <div class="sl-text">Near-monopoly in PCIe 5/6 retimers — every NVIDIA Blackwell rack needs ALAB chips. Strong rising trend with short-term MA at ~$203 acting as support.</div>
+        <div class="sl-label">Key catalyst</div>
+        <div class="sl-catalyst">Blackwell GPU rack design-in confirmed; Q1 FY2027 revenue >$120M expected; hyperscaler GPU cluster ramp ongoing.</div>
+        <div class="sl-tags">
+          <span class="sl-tag">Semiconductors</span><span class="sl-tag">AI Servers</span><span class="sl-tag">Rating 1</span>
+        </div>
+      </div>
+
+      <!-- 4. ADMA -->
+      <div class="sl-card rank-4">
+        <div class="sl-rank">#4 Pick</div>
+        <div class="sl-ticker">ADMA</div>
+        <div class="sl-name">ADMA Biologics</div>
+        <div class="sl-price">~$19 PT</div>
+        <div class="sl-price-sub">Buy consensus · 2 analysts</div>
+        <div class="sl-upside">↑ 35–50% upside target</div>
+        <div class="sl-divider"></div>
+        <div class="sl-label">Why now</div>
+        <div class="sl-text">Hitting first full GAAP profitability milestone in 2026. FY2025 net income projected >$165M, adjusted EBITDA >$215M. ASCENIV market share growing steadily.</div>
+        <div class="sl-label">Key catalyst</div>
+        <div class="sl-catalyst">Q1 2026 revenue +40%; GAAP profitable milestone reached; ASCENIV formulary expansion ongoing.</div>
+        <div class="sl-tags">
+          <span class="sl-tag">Biotech</span><span class="sl-tag">Plasma Proteins</span><span class="sl-tag">Rating 1</span>
+        </div>
+      </div>
+
+      <!-- 5. WGS -->
+      <div class="sl-card rank-5">
+        <div class="sl-rank">#5 Pick</div>
+        <div class="sl-ticker">WGS</div>
+        <div class="sl-name">GeneDx Holdings</div>
+        <div class="sl-price">Strong momentum</div>
+        <div class="sl-price-sub">First GAAP profit Q4 2025</div>
+        <div class="sl-upside">↑ 35–55% upside target</div>
+        <div class="sl-divider"></div>
+        <div class="sl-label">Why now</div>
+        <div class="sl-text">Revenue +80% YoY. First ever GAAP profitable quarter achieved. AI-powered rare disease diagnostics with Medicaid coverage expanding — reimbursement tailwind is significant.</div>
+        <div class="sl-label">Key catalyst</div>
+        <div class="sl-catalyst">Medicaid coverage expanding nationally; 2026 guidance raised post Q4 profit; AI variant interpretation platform scaling.</div>
+        <div class="sl-tags">
+          <span class="sl-tag">Biotech</span><span class="sl-tag">Genomic Dx</span><span class="sl-tag">Rating 1</span>
+        </div>
+      </div>
+
+      <!-- 6. STRL -->
+      <div class="sl-card rank-6">
+        <div class="sl-rank">#6 Pick</div>
+        <div class="sl-ticker">STRL</div>
+        <div class="sl-name">Sterling Infrastructure</div>
+        <div class="sl-price">Record backlog</div>
+        <div class="sl-price-sub">$2.2B backlog · deliveries into 2027</div>
+        <div class="sl-upside">↑ 35–50% upside target</div>
+        <div class="sl-divider"></div>
+        <div class="sl-label">Why now</div>
+        <div class="sl-text">Data center revenue +80% YoY with a $2.2B record backlog providing multi-year revenue visibility. Direct pick-and-shovel play on the hyperscaler capex boom — lower tech risk than pure chip plays.</div>
+        <div class="sl-label">Key catalyst</div>
+        <div class="sl-catalyst">Hyperscaler $50B+ 2026 data center capex plans; new sitework contracts being signed monthly; Q1 2026 backlog at all-time high.</div>
+        <div class="sl-tags">
+          <span class="sl-tag">Industrials</span><span class="sl-tag">Data Centers</span><span class="sl-tag">Rating 1</span>
+        </div>
+      </div>
+
+    </div><!-- /shortlist-grid -->
+
+    <div class="disclaimer">
+      <strong>Note on HIMS:</strong> Originally a Rating 1 pick, HIMS reported a surprise Q1 loss of $92.1M due to a strategic shift to branded GLP-1 products, causing a ~15% share drop. Removed from Kamran's Shortlist pending stabilization. Monitor for re-entry.
+      <br><br>
+      <strong>Disclaimer:</strong> This shortlist is for informational purposes only and does not constitute investment, legal, or financial advice. All investments carry risk of loss. Prices and data as of May 13, 2026.
+    </div>
+
+  </div><!-- /tab-shortlist -->
+
+</div>
+
+<script>
+const stocks = [
+  {t:'ALAB',n:'Astera Labs',sec:'Semiconductors - AI Connectivity',out:'Very Strong',pri:1,edge:'Near-monopoly in PCIe 5/6 retimers; ARIES chip is backbone of NVIDIA GPU clusters',comp:'None - unique niche',earn:'Q1 FY2027: revenue >$120M expected; hyperscaler GPU cluster ramp',act:'Aggressive Entry',str:'Design-win monopoly in AI server PCIe retimers; Amazon & Microsoft wins',wk:'Customer concentration (hyperscalers); fabless reliance on TSMC',opp:'GB200 NVL72 ramp multiplies retimer demand per rack',thr:'In-house retimer design by hyperscalers (2-3 yr risk)',cat:'Blackwell GPU rack design-in confirmed; Q1 beat + raised guidance',up:'35-55%',rat:1},
+  {t:'LEGN',n:'Legend Biotech',sec:'Biotech - CAR-T',out:'Very Strong',pri:1,edge:'CARVYKTI is best-in-class CAR-T for multiple myeloma; earlier-line expansion',comp:'BMS (ide-cel)',earn:'Earlier 2nd-line myeloma approval + manufacturing scale-up catalyst',act:'Aggressive Entry',str:'Fastest growing CAR-T; durable 60%+ ORR in heavily pretreated patients',wk:'Manufacturing capacity limits growth; complex logistics',opp:'1st-line myeloma expansion (market 5x larger); EU approval',thr:'Competition from ide-cel; manufacturing execution risk',cat:'2L myeloma CARTITUDE-4 positive data; JNJ partnership ensures commercialization',up:'35-55%',rat:1},
+  {t:'FTI',n:'TechnipFMC',sec:'Energy - Subsea/LNG',out:'Very Strong',pri:1,edge:'Integrated subsea iEPCI model reducing cost 25-30%; $15B+ order backlog',comp:'SLB (Schlumberger)',earn:'LNG FID wave; subsea orders at record levels; Q1 2026 beat',act:'Aggressive Entry',str:'Unique integrated subsea project delivery; $15B backlog visibility',wk:'Oil price sensitivity; project execution risk',opp:'LNG export infrastructure boom; subsea tree market tight',thr:'Energy transition; commodity cycle risk',cat:'Record $8B Q1 2026 inbound orders; Petrobras mega-contract signed',up:'25-35%',rat:1},
+  {t:'SMCI',n:'Super Micro Computer',sec:'Technology - AI Servers',out:'Very Strong',pri:1,edge:'Direct-liquid-cooled AI servers; fastest Blackwell/H100 delivery times',comp:'Dell Technologies',earn:'Q3 FY2026: revenue $5B+ quarter; Blackwell ramp accelerating',act:'Aggressive Entry',str:'Fastest GPU server delivery; liquid cooling tech lead; NVIDIA partner',wk:'Accounting/audit overhang; competition from Dell/HPE',opp:'AI data center build-out; liquid cooling mandatory for 1000W+ GPUs',thr:'Deloitte audit risk; component supply constraints; margin pressure',cat:'Deloitte audit completion; $40B revenue FY2026 trajectory; Blackwell wins',up:'35-55%',rat:1},
+  {t:'CRDO',n:'Credo Technology',sec:'Semiconductors - AI Ethernet',out:'Very Strong',pri:1,edge:'Active Electrical Cables (AEC) - de facto standard in AI GPU clusters',comp:'Marvell Technology',earn:'Q4 FY2026: Revenue $200M+ expected; Amazon/Microsoft cluster orders',act:'Aggressive Entry',str:'AEC monopoly in 200G/400G AI cluster connectivity; HiWire platform',wk:'Customer concentration (Amazon ~60%); reliant on AI capex',opp:'800G AEC upgrade cycle; Ethernet AI cluster buildout',thr:'In-house AEC development by hyperscalers',cat:'Amazon NVL cluster AEC design-wins; Q3 FY2026 revenue +120% YoY',up:'40-60%',rat:1},
+  {t:'CORT',n:'Corcept Therapeutics',sec:'Pharma - Endocrinology',out:'Very Strong',pri:1,edge:'Cortisol modulation monopoly; relacorilant FDA approval imminent',comp:'Novartis - scale',earn:'Relacorilant FDA PDUFA date 2026 - transformative approval catalyst',act:'Aggressive Entry',str:'Korlym revenue growing; relacorilant Phase 3 positive; strong FCF',wk:'Single franchise risk; relacorilant trial dependency',opp:'Relacorilant approval doubles revenue; GR antagonist patent wall',thr:'Relacorilant FDA rejection risk; label narrower than expected',cat:'Relacorilant PDUFA date set; Phase 3 OS data strong; Korlym +20%',up:'30-50%',rat:1},
+  {t:'STRL',n:'Sterling Infrastructure',sec:'Industrials - Data Center Construction',out:'Very Strong',pri:1,edge:'Data center sitework + utility infrastructure; $5B+ project pipeline',comp:'Fluor Corporation',earn:'AI data center construction boom driving massive backlog growth',act:'Aggressive Entry',str:'Data center ground-up infrastructure specialist; huge backlog visibility',wk:'Project execution risk; labor cost inflation',opp:'Hyperscaler $50B+ 2026 data center capex plans',thr:'Labor shortages; project delays; weather',cat:'Q1 2026 backlog at record $2.2B; data center revenue +80% YoY',up:'35-50%',rat:1},
+  {t:'CCJ',n:'Cameco Corp',sec:'Energy - Uranium',out:'Very Strong',pri:1,edge:"World's largest publicly traded uranium producer; nuclear fuel services",comp:'Uranium Energy Corp',earn:'Nuclear renaissance for AI data center power; utilities signing LTCs',act:'Aggressive Entry',str:'Tier-1 uranium mines; long-term contract book; Westinghouse stake',wk:'Uranium price volatility; mine flooding risk',opp:'AI power demand forcing nuclear renaissance; government support',thr:'Mine operational issues; price caps in contracts',cat:'Microsoft/Amazon nuclear PPA signings; LTC book record Q1 2026',up:'30-45%',rat:1},
+  {t:'NXT',n:'Nextracker',sec:'Clean Energy - Solar Tracking',out:'Very Strong',pri:1,edge:'35%+ global solar tracker market share; NX Horizon AI-enabled tracker',comp:'Array Technologies',earn:'US manufacturing qualifies for IRA domestic content bonus',act:'Aggressive Entry',str:'Market share leader; AI-enabled trackers improve yield 3-5%',wk:'Tariff uncertainty on components; Array competition',opp:'IRA domestic content bonus increases margins; US solar boom',thr:'Policy risk; price erosion from competition',cat:'Q4 FY2025 record revenue; FY2026 guidance raised; backlog $4B+',up:'30-45%',rat:1},
+  {t:'HIMS',n:'Hims & Hers Health',sec:'Healthcare - Telehealth/DTC',out:'Very Strong',pri:1,edge:'2M+ subscribers; GLP-1 compounding for weight loss - massive TAM',comp:'Nuvation Bio - different model',earn:'FDA compounding ruling; Q2 2026 GLP-1 subscriber ramp',act:'Aggressive Entry',str:'2M subscribers; brand strength; GLP-1/semaglutide compounding',wk:'FDA compound semaglutide ruling risk; regulatory uncertainty',opp:'Weight loss market ($100B+); mental health telehealth expansion',thr:'FDA ending compound semaglutide shortage designation',cat:'Q1 2026 revenue +65% YoY; $500M+ GLP-1 run rate; FDA court win',up:'30-50%',rat:1},
+  {t:'POWL',n:'Powell Industries',sec:'Industrials - Electrical Switchgear',out:'Very Strong',pri:1,edge:'Mission-critical switchgear for AI data centers, LNG plants, oil/gas',comp:'Eaton Corporation',earn:'Data center order backlog at record $1.2B; deliveries through 2027',act:'Aggressive Entry',str:'$1.2B+ backlog; 2-year delivery lead times; pricing power growing',wk:'Small cap volatility; supply chain for copper/transformers',opp:'AI data center power infrastructure boom; LNG plant electrification',thr:'Larger players (Eaton, Schneider) entering the market',cat:'Q2 FY2026 record backlog; data center revenue tripled YoY',up:'35-50%',rat:1},
+  {t:'ADMA',n:'ADMA Biologics',sec:'Biotech - Plasma Proteins',out:'Very Strong',pri:1,edge:'BIVIGAM + ASCENIV plasma immunoglobulin therapy; FDA-approved growth',comp:'Grifols - scale; CSL Behring',earn:'Revenue ramp; first full GAAP profitability milestone 2026',act:'Aggressive Entry',str:'Growing plasma protein business; FDA-approved specialty immune IgG',wk:'Plasma supply constraints; manufacturing complexity',opp:'Primary immune deficiency treatment demand growing',thr:'Plasma collection competition; pricing pressure',cat:'Q1 2026 revenue +40%; GAAP profitable milestone; ASCENIV market share',up:'35-50%',rat:1},
+  {t:'ANET',n:'Arista Networks',sec:'Technology - Cloud Networking',out:'Very Strong',pri:1,edge:'AI data center back-end network fabric leader; 400G/800G Ethernet',comp:'Cisco Systems',earn:'AI GPU cluster networking demand; Q1 2026 revenue +25% expected',act:'Aggressive Entry',str:'AI Ethernet back-end monopoly for hyperscalers; EOS software moat',wk:'Customer concentration (Meta, Microsoft); high valuation',opp:'Ultra Ethernet consortium driving 800G AI cluster networking',thr:'Cisco comeback; Broadcom/InfiniBand competition',cat:'Meta AI cluster 400G Ethernet wins; Q4 2025 $7B revenue run rate',up:'25-35%',rat:1},
+  {t:'NOW',n:'ServiceNow',sec:'Software - Enterprise AI Platform',out:'Very Strong',pri:1,edge:'AI-first enterprise workflow automation; Now Assist AI platform',comp:'Salesforce Agentforce',earn:'Q1 2026 cRPO +22%; Now Assist driving upsell across 8,000 enterprises',act:'Aggressive Entry',str:"Sticky platform; 1,900 $1M+ customers; AI workflow platform leader",wk:'Valuation premium (>50x earnings); Salesforce competition',opp:'Enterprise agentic AI - every workflow can be automated',thr:'Salesforce Agentforce; Microsoft Power Platform',cat:'Now Assist $1B ARR milestone; Q1 2026 guide raised; CEO bullish AI',up:'22-32%',rat:1},
+  {t:'PANW',n:'Palo Alto Networks',sec:'Software - Cybersecurity',out:'Very Strong',pri:1,edge:'AI-native SOC platform; platformization replacing 10+ point solutions',comp:'CrowdStrike - endpoint leader',earn:'Q3 FY2026 billings recovery; AI-driven platformization wins',act:'Aggressive Entry',str:'AI-native security platform; 1,150+ platformized customers',wk:'Billings transition causing short-term noise; competition',opp:'AI security market exploding; autonomous SOC vision',thr:'CrowdStrike competition; economic pressure on security budgets',cat:'AI SOC Cortex XSIAM wins doubling; Q2 FY2026 RPO +23%',up:'22-32%',rat:1},
+  {t:'ARM',n:'Arm Holdings',sec:'Semiconductors - IP Licensing',out:'Very Strong',pri:1,edge:'CPU architecture for 99% of smartphones; AI everywhere expansion',comp:'RISC-V - open-source alternative',earn:'AI PC/custom silicon royalty growth; v9 architecture ramp',act:'Aggressive Entry',str:'CPU IP monopoly; royalty model scales with AI silicon boom',wk:'High valuation; RISC-V threat; SoftBank concentration',opp:'Custom AI chip designs using Arm v9; automotive compute',thr:'RISC-V adoption risk; geopolitical China exposure',cat:'Arm v9 royalty rate 2x v8; AI custom silicon all use Arm; AWS Graviton5',up:'25-40%',rat:1},
+  {t:'MRVL',n:'Marvell Technology',sec:'Semiconductors - AI Custom Silicon',out:'Very Strong',pri:1,edge:'Custom AI ASICs for Google (TPU), Amazon (Trainium); ethernet PHY',comp:'Broadcom - larger custom ASIC',earn:'Q1 FY2027: $2.4B+ revenue; AI custom silicon ramping strongly',act:'Aggressive Entry',str:'Google+Amazon custom AI chip design wins; $15B+ AI revenue path',wk:'TSMC supply dependency; AWS/Google in-house risk',opp:'Custom AI chip market growing 40% CAGR; PAM4/DSP for 1.6T',thr:'In-house ASIC development by cloud titans',cat:'Amazon Trainium3 confirmed; Google TPU v7 design-in; Polariton acquisition',up:'28-42%',rat:1},
+  {t:'AMAT',n:'Applied Materials',sec:'Semiconductor Equipment - WFE',out:'Very Strong',pri:1,edge:'Leading WFE provider; ICAPS (IoT/auto) + gate-all-around tooling',comp:'LRCX (Lam Research) - comparable',earn:'Gate-all-around node ramp at TSMC/Intel; advanced packaging boom',act:'Aggressive Entry',str:'Broadest WFE portfolio; materials engineering expertise',wk:'China export controls ($2B+ risk); lumpy orders',opp:'Gate-all-around transition drives new tool cycles; advanced packaging',thr:'Export restrictions; geopolitical risk',cat:'TSMC N2 GAA tool qualification; Q2 FY2026 record advanced WFE revenue',up:'22-32%',rat:1},
+  {t:'NBIS',n:'Nebius Group',sec:'Technology - AI Cloud Infrastructure',out:'Very Strong',pri:1,edge:'NVIDIA-backed AI cloud infrastructure; European AI sovereignty play',comp:'AWS/GCP - hyperscaler competition',earn:'European AI regulation driving demand for independent AI cloud',act:'Aggressive Entry',str:'NVIDIA partnership; European sovereign AI cloud; growing fast',wk:'Early stage; unprofitable; competitive vs hyperscalers',opp:'EU AI Act driving demand for sovereign AI infrastructure',thr:'AWS/Azure/GCP dominant in cloud; funding risk',cat:'NVIDIA H100 cluster in Netherlands; $700M+ revenue 2026E; Yandex spinoff',up:'40-65%',rat:1},
+  {t:'WGS',n:'GeneDx Holdings',sec:'Biotech - Genomic Diagnostics',out:'Very Strong',pri:1,edge:'Pediatric rare disease whole exome/genome sequencing leader',comp:'Natera - prenatal/oncology focus',earn:'Revenue +80% YoY; first GAAP profitable quarter achieved in 2026',act:'Aggressive Entry',str:'AI-powered rare disease diagnostics; exome sequencing speed leader',wk:'Not yet consistently profitable; reimbursement expansion risk',opp:'Rare disease diagnosis pipeline; AI-driven variant interpretation',thr:'Illumina vertical integration; reimbursement uncertainty',cat:'Q4 2025 first GAAP profit; Medicaid coverage expanding; 2026 guide raised',up:'35-55%',rat:1},
+  {t:'ONTO',n:'Onto Innovation',sec:'Semiconductor Equipment - Metrology',out:'Strong',pri:2,edge:'Advanced packaging inspection (CoWoS/HBM) - critical for AI chips',comp:'KLA Corp - scale and breadth',earn:'HBM3e/4 inspection demand driving record orders; Q1 2026 beat',act:'Accumulate',str:'AI packaging inspection leader; no direct competitor at similar scale',wk:'Customer concentration (TSMC CoWoS); lumpy orders',opp:'HBM4/CoWoS next-gen packaging boom; advanced node inspection',thr:'KLA vertical integration; customer in-house inspection',cat:'Record Q1 backlog; TSMC CoWoS N3 inspection wins; HBM4 qualification',up:'25-35%',rat:1},
+  {t:'WDC',n:'Western Digital',sec:'Technology - Storage',out:'Strong',pri:2,edge:'Integrated HDD + NAND flash; AI/ML storage demand rising; strong enterprise SSD pipeline',comp:'STX (Seagate)',earn:'Q3 FY2026 beat expected on AI storage; cloud capex driving demand',act:'Accumulate',str:'Diversified storage portfolio; NAND + HDD synergy',wk:'Cyclical swings; China export risk; NAND oversupply possible',opp:'AI data-center storage explosion; HDD capacity growth for HAMR tech',thr:'Samsung/SK Hynix price wars; macro slowdown',cat:'Flash-cycle recovery; Kioxia JV resolution; AI-flash NDA wins',up:'15-25%',rat:2},
+  {t:'AAOI',n:'Applied Optoelectronics',sec:'Semiconductors - Optical',out:'Strong',pri:2,edge:'High-speed 400G/800G transceivers for AI hyperscaler data centers; pure-play optical',comp:'IIVI (Coherent)',earn:'Q2 2026 hyperscaler transceiver orders expected to surge 40%+',act:'Aggressive Entry',str:'Pure-play AI optical; fastest cycle to 800G products',wk:'Small-cap volatility; customer concentration (Amazon ~50%)',opp:'800G upgrade cycle just beginning; pluggable optics replacing fixed',thr:'Coherent/Lumentum price pressure; supply constraints',cat:'Amazon AWS 800G transceiver wins; Q1 2026 revenue +60% YoY',up:'30-50%',rat:2},
+  {t:'TEM',n:'Tempus AI',sec:'Healthcare - AI Diagnostics',out:'Strong',pri:2,edge:'Largest proprietary oncology AI data library; 900+ health system partners',comp:'Guardant Health (GH)',earn:'Biomarker data licensing deals; pharma partnerships accelerating',act:'Accumulate',str:'Unmatched clinical AI dataset (220B+ data points); sticky partnerships',wk:'Not yet profitable; heavy R&D spend; regulatory risk',opp:'AI diagnostics boom; precision oncology market growing 15%+ annually',thr:'Data privacy regulation; EHR incumbents (Epic)',cat:'Tempus Next AI product launch; AstraZeneca multi-year deal',up:'25-40%',rat:2},
+  {t:'TGTX',n:'TG Therapeutics',sec:'Biotech - MS',out:'Strong',pri:2,edge:'BRIUMVI fastest-growing MS drug; $1B+ peak sales path',comp:'BIIB (Biogen)',earn:'2026 label expansion (primary progressive MS) decision expected',act:'Aggressive Entry',str:'Best-in-class anti-CD20 for relapsing MS; strong commercial execution',wk:'Single-product risk; reimbursement negotiations',opp:'PPMS label expansion doubles addressable market',thr:'Competition from Ocrevus (Roche) and newer entrants',cat:'BRIUMVI market share 12% and rising; Q1 2026 sales +55% YoY',up:'25-40%',rat:2},
+  {t:'FRPT',n:'Freshpet',sec:'Consumer - Pet Food',out:'Strong',pri:2,edge:'Only national refrigerated fresh pet food brand; premium category creator',comp:'General Mills (Blue Buffalo)',earn:'Q1 2026 volume +25%; new fridge rollout hitting 35,000 stores',act:'Accumulate',str:'First-mover advantage; brand loyalty in pet humanization trend',wk:'High operating costs; fridge install capital-intensive',opp:'Pet food premiumization; subscription/DTC channel',thr:'Cost inflation; consumer trade-down risk',cat:'Capacity expansion complete; Ennis TX plant at full ramp',up:'20-30%',rat:2},
+  {t:'LBRT',n:'Liberty Energy',sec:'Energy - Oil Services',out:'Strong',pri:2,edge:'Technology-driven completion services; digiPrime electric frac fleet',comp:'HAL (Halliburton)',earn:'US fracking activity steady; LNG export capex driving demand',act:'Accumulate',str:'Electric fleet differentiation; leading Permian market share',wk:'Oil price sensitivity; fleet oversupply risk',opp:'LNG boom driving gas well completions; geothermal pivot',thr:'Commodity cycle downturn; fleet overcapacity',cat:'New geothermal JV; fleet utilization >90%; natural gas tailwinds',up:'18-25%',rat:2},
+  {t:'ALGM',n:'Allegro MicroSystems',sec:'Semiconductors - Sensors',out:'Strong',pri:2,edge:'Magnetic sensor IC leader for EV traction, ADAS, industrial',comp:'Infineon Technologies',earn:'EV recovery driving Q2 FY2027 rebound; design-win pipeline strong',act:'Accumulate',str:'EV current sensing monopoly position; high-margin specialty ICs',wk:'EV market slowdown in 2024-2025 created inventory overhang',opp:'ADAS sensor count per vehicle growing 3x through 2030',thr:'Competition from Infineon and TI; EV demand cyclicality',cat:'Auto design-win cadence accelerating; industrial robotics wins',up:'18-28%',rat:2},
+  {t:'VECO',n:'Veeco Instruments',sec:'Semiconductor Equipment',out:'Strong',pri:2,edge:'MOCVD and laser anneal equipment critical for power devices and LEDs',comp:'AMAT (Applied Materials)',earn:'EV SiC wafer capacity ramp driving MOCVD orders; Q1 beat',act:'Accumulate',str:'Niche equipment monopoly; recurring service revenue',wk:'Lumpy order patterns; limited scale vs. major players',opp:'SiC for EV and 5G infrastructure equipment; advanced LED',thr:'Larger players developing competing tools',cat:'SiC capacity expansion orders from Wolfspeed; data center laser wins',up:'15-25%',rat:2},
+  {t:'ICHR',n:'Ichor Holdings',sec:'Semiconductor Equipment - Supply Chain',out:'Strong',pri:2,edge:'Gas delivery subsystems - critical component in AMAT/KLAC/LAM tools',comp:'Entegris - broader chemicals',earn:'WFE spending recovery benefits ICHR directly; TSMC/Intel fabs expanding',act:'Accumulate',str:'Mission-critical supply chain; deep OEM relationships with top WFE companies',wk:'Customer concentration (AMAT ~50%); margin pressure',opp:'Leading-edge fab expansion globally; CHIPS Act beneficiary',thr:'Customer vertical integration risk',cat:'CHIPS Act fab orders flowing; Q1 2026 backlog +30%',up:'20-30%',rat:2},
+  {t:'TCOM',n:'Trip.com Group',sec:'Travel - OTA (China/Global)',out:'Strong',pri:2,edge:"China's largest OTA; outbound travel recovering; global expansion",comp:'Booking Holdings',earn:'China outbound travel +40% YoY; Q1 2026 revenue surge expected',act:'Accumulate',str:'China travel platform monopoly; low-cost international expansion',wk:'China geopolitical tension; regulatory risk; FX exposure',opp:'Cross-border travel rebound; Southeast Asia hotel inventory',thr:'US-China trade tensions impacting sentiment',cat:'China Spring 2026 travel surge; Q4 2025 record revenue',up:'25-35%',rat:2},
+  {t:'ANF',n:'Abercrombie & Fitch',sec:'Retail - Apparel',out:'Strong',pri:2,edge:'Brand reinvention targeting 25-40 yr olds; Hollister teen rebound',comp:'American Eagle Outfitters',earn:'Q1 FY2026 comps +15% guidance; strong international momentum',act:'Accumulate',str:'Successful brand repositioning; strong DTC and international growth',wk:'Consumer spending sensitivity; tariffs on sourced goods',opp:'International expansion (Europe/APAC); digital commerce growth',thr:'Import tariff risk; inventory management',cat:'Q4 FY2025 record quarter; 2026 guidance raised again',up:'20-30%',rat:2},
+  {t:'DLO',n:'dLocal',sec:'Fintech - Emerging Markets Payments',out:'Strong',pri:2,edge:'Only regulated cross-border payment processor in 40+ EM countries',comp:'Adyen - broader platform',earn:'Q1 2026 TPV +35%; LatAm/Africa digital commerce boom',act:'Accumulate',str:'Regulatory moat in EM; only compliant cross-border EM platform',wk:'FX risk; regulatory complexity; thin margins',opp:'EM digital payments still <30% penetration; fintech M&A target',thr:'Local payment company competition; FX volatility',cat:'Africa expansion (Egypt, Kenya); fintech M&A rumors',up:'25-35%',rat:2},
+  {t:'AEHR',n:'Aehr Test Systems',sec:'Semiconductor Equipment - Burn-In Test',out:'Strong',pri:2,edge:'Wafer-level burn-in test for SiC/GaN power chips - near-monopoly',comp:'Cohu - broader test equipment',earn:'SiC chip demand recovery for EV; new SiO2 memory application win',act:'Accumulate',str:'Near-monopoly in wafer burn-in for power semiconductors',wk:'Highly concentrated revenue; small cap volatility',opp:'SiC capacity boom for EVs; new photonics test market',thr:'Customer delays; EV market slowdown',cat:'Wolfspeed burn-in contract; SiO2 memory test wins with new customer',up:'25-40%',rat:2},
+  {t:'FORM',n:'FormFactor',sec:'Semiconductor Equipment - Probe Cards',out:'Strong',pri:2,edge:'Advanced probe cards for AI chip testing; NVIDIA HBM3e testing wins',comp:'Cohu - broader handler/test',earn:'AI chip ramp driving probe card demand; HBM3e testing wins',act:'Accumulate',str:'AI chip probe card growth; advanced packaging probe leadership',wk:'Customer concentration; lumpy orders',opp:'HBM4 ramp; advanced packaging test market growth',thr:'Vertical integration by TSMC; KLA competition',cat:'NVIDIA Blackwell HBM3e probe card wins; Q1 2026 revenue +30%',up:'20-30%',rat:2},
+  {t:'ALKS',n:'Alkermes',sec:'Pharma - Neuroscience',out:'Strong',pri:2,edge:'VIVITROL (addiction), LYBALVI (schizophrenia) - growing specialty pharma',comp:'AbbVie - broader CNS pipeline',earn:'LYBALVI market share gains; pipeline ALKS-2680 orexin catalyst',act:'Accumulate',str:'Addiction treatment moat (VIVITROL); mental health growth',wk:'Mature VIVITROL growth; pipeline uncertainty',opp:'Mental health crisis driving drug demand; ALKS-2680 narcolepsy',thr:'Generic competition threat to VIVITROL',cat:'ALKS-2680 narcolepsy Phase 3 data (H1 2026); LYBALVI insurance wins',up:'18-25%',rat:2},
+  {t:'GNRC',n:'Generac Holdings',sec:'Industrials - Power Generation',out:'Strong',pri:2,edge:'Home standby generator market leader; AI data center UPS/BESS expansion',comp:'Kohler (private)',earn:'Grid reliability concerns driving resi demand; data center BESS orders',act:'Accumulate',str:'70%+ US home standby market share; expanding BESS/storage segment',wk:'Tariffs on components; housing market sensitivity',opp:'Data center power backup; grid resilience spending boom',thr:'Import tariffs; competition in storage from Tesla/Enphase',cat:'Q1 2026 revenue +12%; data center energy storage new segment launch',up:'20-30%',rat:2},
+  {t:'AVPT',n:'AvePoint',sec:'Software - Cloud Governance',out:'Strong',pri:2,edge:'Microsoft 365 data management and compliance; AI governance layer',comp:'Veeam - stronger backup/recovery',earn:'M365 AI Copilot adoption driving data governance demand',act:'Accumulate',str:'Deep Microsoft partner; AI governance for Copilot deployments',wk:'Small cap; competition from native M365 tools',opp:'AI governance market emerging; GDPR/compliance tailwinds',thr:'Microsoft builds competing native features',cat:'Microsoft Copilot governance deals; Q1 2026 ARR +25%',up:'18-28%',rat:2},
+  {t:'EXEL',n:'Exelixis',sec:'Biotech - Oncology',out:'Strong',pri:2,edge:'Cabometyx growing in kidney+HCC; XL309 and zanzalimab pipeline',comp:'Bristol Myers Squibb',earn:'Combination approvals; cabozantinib label expansion 2026',act:'Accumulate',str:'Profitable biotech; strong FCF; growing royalties from BMS',wk:'Cabometyx patent expiration concern; competition in RCC',opp:'Combination therapy with PD-1 inhibitors; new tumor types',thr:'Generic cabozantinib entry risk (2026)',cat:'Zanzalimab Phase 2 data Q2 2026; strong Q1 revenue +12%',up:'18-28%',rat:2},
+  {t:'INCY',n:'Incyte Corp',sec:'Biotech - Hematology/Oncology',out:'Strong',pri:2,edge:'Jakafi (ruxolitinib) JAK inhibitor; ZYNYZ expanding skin oncology',comp:'AbbVie (upadacitinib)',earn:'ZYNYZ label expansion approvals; pipeline readouts 2026',act:'Accumulate',str:'Jakafi myelofibrosis/PV franchise; profitable; diversifying pipeline',wk:'Jakafi biosimilar threat (2028); pipeline concentration',opp:'ZYNYZ CTCL/PTCL expansion; new JAK indications',thr:'Ruxolitinib biosimilar competition emerging',cat:'ZYNYZ CTCL approval expanding use; Q1 2026 Jakafi +8%',up:'15-22%',rat:2},
+  {t:'FSLR',n:'First Solar',sec:'Clean Energy - Solar Manufacturing',out:'Strong',pri:2,edge:'Only US-headquartered utility solar manufacturer; tariff-immune',comp:'Jinko Solar - global scale',earn:'54.5GW backlog; IRA domestic content bonus locked in',act:'Accumulate',str:'US manufacturing moat; 54.5GW contracted backlog; tech differentiation',wk:'Series 7 manufacturing defect overhang; guidance cut',opp:'IRA domestic content bonus; tariff advantage over Chinese makers',thr:'Series 7 warranty costs; IRA policy risk',cat:'Louisiana AI-enabled plant operational; South Carolina plant 2H 2026',up:'20-30%',rat:2},
+  {t:'RMBS',n:'Rambus Inc',sec:'Semiconductors - IP Licensing',out:'Strong',pri:2,edge:'HBM memory interface IP licensing; cryptography security IP',comp:'Arm Holdings - broader IP licensing',earn:'HBM4 ramp drives royalty growth; AI chip licensing deals',act:'Accumulate',str:'HBM licensing monopoly; growing royalties as AI HBM demand surges',wk:'Lumpy licensing revenue; patent dispute risk',opp:'HBM4/HBM4E for next-gen AI; data center security IP',thr:'License renegotiation risk; Samsung/SK Hynix pushback',cat:'HBM3e royalty uptick; Samsung multi-year license renewal',up:'18-25%',rat:2},
+  {t:'EXLS',n:'ExlService Holdings',sec:'Technology - Analytics/AI',out:'Strong',pri:2,edge:'AI-powered analytics + insurance/healthcare process outsourcing',comp:'Genpact - scale and diversification',earn:'Insurance AI analytics deals accelerating; Q1 2026 revenue +20%',act:'Accumulate',str:'AI-native analytics platform; deep insurance domain expertise',wk:'Margin pressure; competition from Accenture/TCS',opp:'Insurance/banking AI adoption wave; analytics modernization',thr:'Big tech (Palantir) entering analytics space',cat:'Major insurance AI transformation deal; FY2026 guidance raised',up:'18-25%',rat:2},
+  {t:'BMRN',n:'BioMarin Pharmaceutical',sec:'Biotech - Rare Disease',out:'Strong',pri:2,edge:'Roctavian hemophilia A gene therapy; 6-drug rare disease franchise',comp:'Sanofi - broader hemophilia portfolio',earn:'Roctavian US commercial ramp; BMN 307 Phase 3 data 2026',act:'Accumulate',str:'Diversified rare disease portfolio; gene therapy pioneer',wk:'Roctavian slow commercial uptake; high development costs',opp:'Gene therapy market growth; price premium for cures',thr:'Reimbursement hurdles for gene therapy',cat:'Roctavian patient activations accelerating; 2026 gene therapy data',up:'18-25%',rat:2},
+  {t:'AXGN',n:'Axogen Inc',sec:'Medical Devices - Nerve Repair',out:'Strong',pri:2,edge:'Only commercial peripheral nerve repair company; Avance nerve graft',comp:'Integra Lifesciences',earn:'Q1 2026 surgical volume recovery; new hospital accounts opening',act:'Accumulate',str:'Monopoly in peripheral nerve repair biologics',wk:'Small cap; hospital budget sensitivity; reimbursement complexity',opp:'Nerve damage surgical market underserved; new trauma indications',thr:'Hospital capex pressure; competition from synthetic grafts',cat:'Q1 2026 revenue +18%; new trauma center contracts signed',up:'20-30%',rat:2},
+  {t:'AR',n:'Antero Resources',sec:'Energy - Natural Gas',out:'Strong',pri:2,edge:'Low-cost Appalachian natural gas; premium LNG-linked pricing',comp:'EQT Corp - larger scale',earn:'LNG export capacity additions driving gas price; Q1 2026 strong',act:'Accumulate',str:'Lowest-cost Appalachian producer; LNG-priced contracts; hedged',wk:'Natural gas price sensitivity; basis differentials',opp:'LNG export boom; data center gas demand growing',thr:'Gas price collapse; pipeline capacity constraints',cat:'Sabine Pass LNG expansion; gas demand from AI data centers',up:'22-32%',rat:2},
+  {t:'RRC',n:'Range Resources',sec:'Energy - Natural Gas',out:'Strong',pri:2,edge:'Marcellus Shale low-cost gas; LNG pipeline access advantage',comp:'EQT Corp - larger and more efficient',earn:'LNG export growth; Q1 2026 FCF expansion',act:'Accumulate',str:'Lowest all-in cost structure in Appalachian basin; LNG pipeline access',wk:'Gas price volatility; basis risk',opp:'AI data center gas demand; LNG export terminal ramp',thr:'Gas price collapse; hedging loss risk',cat:'Transco/REX pipeline access for Gulf LNG; FCF growing strongly',up:'20-30%',rat:2},
+  {t:'FFIV',n:'F5 Inc',sec:'Technology - Application Delivery',out:'Strong',pri:2,edge:'AI application traffic management; security for multi-cloud deployments',comp:'Cloudflare - cloud-native delivery',earn:'AI traffic management for LLM APIs; Q2 FY2026 beat',act:'Accumulate',str:'Mission-critical app delivery; AI workload traffic management',wk:'Hardware transition headwinds; Cloudflare competition',opp:'AI inference traffic explosion requires advanced delivery',thr:'Cloudflare expanding into F5 territory',cat:'AI traffic management deals with Microsoft Azure; SaaS revenue +30%',up:'18-25%',rat:2},
+  {t:'AAON',n:'AAON Inc',sec:'Industrials - HVAC',out:'Strong',pri:2,edge:'Custom commercial HVAC including data center cooling units',comp:'Trane Technologies - scale',earn:'Data center cooling demand surging; Q1 2026 bookings +35%',act:'Accumulate',str:'Custom data center HVAC differentiation; high-quality manufacturing',wk:'Limited capacity vs. larger HVAC players',opp:'AI server thermal management critical; liquid cooling integration',thr:'Larger HVAC companies scaling data center solutions',cat:'Data center HVAC orders doubling; Longview plant expansion underway',up:'20-30%',rat:2},
+  {t:'CSCO',n:'Cisco Systems',sec:'Technology - Networking',out:'Strong',pri:2,edge:'AI networking (Silicon One); Splunk security integration; subscription pivot',comp:'Arista Networks - cloud challenger',earn:'AI networking refresh cycle; Splunk SaaS revenue contributing',act:'Accumulate',str:'AI Silicon One chips; Splunk SIEM integration; massive installed base',wk:'Legacy hardware decline; Arista taking cloud share',opp:'AI infrastructure networking; unified security+network platform',thr:'Arista competition in cloud networking',cat:'Splunk integration synergies; AI data center orders +25% YoY',up:'15-22%',rat:2},
+  {t:'DECK',n:'Deckers Outdoor',sec:'Consumer - Footwear/Apparel',out:'Strong',pri:2,edge:'HOKA fastest-growing running brand globally; UGG premiumization',comp:'Nike - global athletic scale',earn:'HOKA Q4 FY2026 growth +25%; UGG seasonal tailwinds',act:'Accumulate',str:'HOKA brand momentum; UGG lifestyle expansion; DTC margin strength',wk:'Consumer spending sensitivity; tariffs on Vietnam/China sourcing',opp:'HOKA performance footwear market; international expansion',thr:'Tariff impact on gross margins; Nike competition',cat:'HOKA $2B+ revenue milestone; Q3 FY2026 EPS beat; DTC +35%',up:'18-28%',rat:2},
+  {t:'INOD',n:'Innodata Inc',sec:'Technology - AI Data Services',out:'Strong',pri:2,edge:'LLM training data annotation; AI model evaluation services',comp:'Scale AI (private) - larger scale',earn:'LLM training data demand surging; new AI model contracts',act:'Accumulate',str:'Diversified AI data + BPO; growing LLM annotation contracts',wk:'Commoditization risk as AI becomes self-supervised',opp:'LLM fine-tuning data market growing; model safety evaluation',thr:'Self-supervised learning reducing annotation need',cat:'New frontier AI model training contracts; Q1 2026 revenue +45%',up:'25-35%',rat:2},
+  {t:'ARDX',n:'Ardelyx Inc',sec:'Biotech - Nephrology',out:'Strong',pri:2,edge:'XPHOZAH (phosphate absorption inhibitor) for CKD; novel MOA',comp:'Travere Therapeutics - renal portfolio',earn:'XPHOZAH commercial ramp; formulary additions driving volume',act:'Accumulate',str:'Novel phosphate absorption mechanism; strong clinical data',wk:'Narrow CKD indication; reimbursement complexity',opp:'3M+ US CKD dialysis patients; XPHOZAH underpenetrated',thr:'Step therapy requirements; insurance prior auth hurdles',cat:'Formulary wins at top dialysis chains; Q1 2026 scripts +60% YoY',up:'25-35%',rat:2},
+  {t:'VCYT',n:'Veracyte Inc',sec:'Biotech - Genomic Diagnostics',out:'Strong',pri:2,edge:'Afirma thyroid + Decipher prostate genomic tests; multi-cancer expansion',comp:'Guardant Health - liquid biopsy leader',earn:'Decipher prostate uptake in urology practices; reimbursement wins',act:'Accumulate',str:'Multi-cancer genomic intelligence; strong clinical evidence base',wk:'Coverage dependent on insurer decisions; competition',opp:'Genomic test reimbursement expansion; multi-cancer early detection',thr:'New lab competition; reimbursement delays',cat:'Medicare coverage for Decipher expanded; Q1 2026 revenue +22%',up:'20-30%',rat:2},
+  {t:'ON',n:'ON Semiconductor',sec:'Semiconductors - Power/SiC',out:'Strong',pri:2,edge:'SiC power module leader for EV traction inverters; IGBT/MOSFET',comp:'STMicroelectronics - comparable SiC',earn:'EV recovery driving SiC demand; Q1 2026 inventory normalized',act:'Accumulate',str:'SiC EV power leadership; industrial/energy transition exposure',wk:'EV market slowdown created 2024-2025 inventory overhang',opp:'EV recovery accelerating; energy storage SiC demand',thr:'STMicro price competition; Chinese SiC entrants',cat:'EV SiC design-wins at major OEMs; inventory burn through; Q1 beat',up:'20-30%',rat:2},
+  {t:'NVT',n:'nVent Electric',sec:'Industrials - Electrical Enclosures',out:'Strong',pri:2,edge:'Data center thermal management + enclosures; precision cooling',comp:'Vertiv Holdings - direct competitor',earn:'Data center thermal/cooling demand record orders; Q1 2026 beat',act:'Accumulate',str:'Data center enclosures + cooling integration; strong recurring revenue',wk:'Vertiv competition intensifying in thermal management',opp:'AI server thermal management critical; $30B cooling market',thr:'Vertiv expanding market share aggressively',cat:'Data center cooling revenue +50% YoY; Hoffman enclosure wins',up:'18-25%',rat:2},
+  {t:'LIVN',n:'LivaNova PLC',sec:'Medical Devices - Neuromodulation',out:'Strong',pri:2,edge:'VNS Therapy for epilepsy and treatment-resistant depression (TRD)',comp:'Medtronic - neuromodulation scale',earn:'VNS TRD coverage expansion; cardiac recovery momentum',act:'Accumulate',str:'VNS therapy monopoly for epilepsy; TRD approval optionality',wk:'Slow TRD coverage expansion; cardiac surgery cyclicality',opp:'TRD ($5B+ market underserved); Medicare coverage expansion',thr:'VNS coverage denials; competition from TMS therapy',cat:'Medicare TRD coverage expansion; Q1 2026 VNS units +15%',up:'15-22%',rat:2},
+  {t:'BKR',n:'Baker Hughes Co',sec:'Energy - Oilfield Services/AI',out:'Strong',pri:2,edge:'GAIA industrial AI platform; LNG technology leader; IET segment',comp:'SLB (Schlumberger) - scale',earn:'LNG order acceleration; AI-powered oilfield services ramping',act:'Accumulate',str:'GAIA AI platform differentiation; LNG tech leadership; IET diversification',wk:'Oil/gas price sensitivity; SLB competition',opp:'LNG infrastructure boom; industrial AI monetization',thr:'Commodity cycle downturn; energy transition long term',cat:'Record LNG orders; GAIA $1B ARR target set; Q1 2026 beat',up:'18-25%',rat:2},
+  {t:'GMED',n:'Globus Medical',sec:'Medical Devices - Spine/Robotics',out:'Strong',pri:2,edge:'MZERO spine robot + NuVasive merger creating scale; implant biologics',comp:'Stryker (Mako) - robotics scale',earn:'MZERO robot placement accelerating; Q1 2026 merger synergies',act:'Accumulate',str:'Spine + robotics synergy; NuVasive scale adds distribution reach',wk:'NuVasive integration risk; Stryker competition',opp:'Robotic spine surgery market growing 20%+ annually',thr:'Stryker/Medtronic with larger sales forces',cat:'MZERO robot placements +40% YoY; NuVasive synergies on track',up:'18-28%',rat:2},
+  {t:'STNG',n:'Scorpio Tankers',sec:'Maritime - Product Tankers',out:'Strong',pri:2,edge:'Modern eco-efficient product tanker fleet; strong cash generation',comp:'Nordic American Tankers - dividend',earn:'Atlantic basin refined product trade; Q1 2026 TCE rates strong',act:'Accumulate',str:'Young modern fleet; strong FCF; aggressive buybacks underway',wk:'Tanker rate cyclicality; oil demand uncertainty',opp:'Atlantic-Pacific trade route dislocation; LNG-linked refined products',thr:'Rate cycle downturn; canal disruptions normalizing',cat:'Q1 2026 TCE $30,000+/day; record buyback program; fleet renewal',up:'18-25%',rat:2},
+  {t:'LRN',n:'Stride Inc',sec:'Education - Online K-12',out:'Strong',pri:2,edge:'Largest US virtual charter school operator; Career Learning segment',comp:'Coursera - adult online education',earn:'K-12 enrollment growth; career learning for adults accelerating',act:'Accumulate',str:'Charter school infrastructure; 170,000+ enrolled students; GAAP profitable',wk:'Policy risk (charter school funding); teacher shortage',opp:'AI-personalized K-12 learning; career/trade education growth',thr:'State legislature charter school funding cuts',cat:'FY2026 enrollment +8%; career learning revenue +30%; GAAP profitable',up:'18-25%',rat:2},
+  {t:'AMSC',n:'American Superconductor',sec:'Industrials - Power Electronics',out:'Strong',pri:2,edge:'Grid power management systems + navy ship propulsion + wind power controls',comp:'ABB Ltd - scale; GE Vernova',earn:'Grid modernization orders; Navy D-FACTS orders; wind power controls',act:'Accumulate',str:'Navy SHIP contract base; grid power electronics; superconductor IP',wk:'Small cap volatility; lumpy government orders',opp:'AI data center grid stability; naval electrification',thr:'Budget delays; larger grid players entering',cat:'Navy ship contract wins; grid modernization orders +40%; Q1 beat',up:'22-32%',rat:2},
+  {t:'ENPH',n:'Enphase Energy',sec:'Clean Energy - Solar',out:'Average',pri:3,edge:'Microinverter market leader; IQ Battery integrated storage',comp:'FSLR (First Solar)',earn:'IQ9 Commercial launch; Q4 2025 battery shipments recovering',act:'Hold',str:'Microinverter technology lock-in; global expansion in Europe',wk:'25D residential tax credit expiration risk; sluggish US resi market',opp:'IQ9 Commercial opens new addressable market; storage attach rates rising',thr:'Tax credit cuts; elevated competition from SolarEdge',cat:'Q4 2025 EPS beat; IQ9 launch Jan 2026; European battery ramp',up:'15-25%',rat:3},
+  {t:'TEAM',n:'Atlassian',sec:'Software - Dev Tools',out:'Average',pri:3,edge:'Jira/Confluence cloud platform; Atlassian Intelligence AI features',comp:'GitHub (Microsoft)',earn:'Q3 FY2026 cloud revenue +18%; AI features driving upgrades',act:'Hold',str:'Developer ecosystem lock-in; 250,000+ enterprise customers',wk:'Enterprise migration headwinds; high valuation; slowing growth',opp:'AI-native project management; enterprise AI adoption',thr:'GitHub Copilot competition; Microsoft Teams cannibalization',cat:'Atlassian Intelligence adoption; cloud migration 70% complete',up:'12-18%',rat:3},
+  {t:'OKTA',n:'Okta',sec:'Software - Identity Security',out:'Average',pri:3,edge:'Identity and access management leader; AI-Workforce identity platform',comp:'Microsoft Entra - bundled with M365',earn:'Q1 FY2027 RPO growth; AI identity governance product launch',act:'Hold',str:'Identity platform leader; 18,000 enterprise customers',wk:'Microsoft competition intensifying; sales execution challenges',opp:'AI workforce identity management; zero-trust architecture',thr:'Microsoft Entra bundling eroding share; valuation premium',cat:'AI identity products launched; cRPO growth re-accelerating',up:'10-18%',rat:3},
+  {t:'SNOW',n:'Snowflake Inc',sec:'Software - Cloud Data Platform',out:'Average',pri:3,edge:'Cloud data platform; Cortex AI for data lakehouse workloads',comp:'Databricks (private); Google BigQuery',earn:'Q1 FY2027: product revenue +25%; AI workload growth',act:'Hold',str:'Data cloud leader; Cortex AI growing; 10,000+ customers',wk:'High valuation; slowing growth; Databricks competition',opp:'AI data lakehouse market; unstructured data AI processing',thr:'Databricks undercutting on price; Google BigQuery bundled',cat:'Cortex AI launch driving workloads; FY2026 guidance in-line',up:'12-18%',rat:3},
+  {t:'DHI',n:'D.R. Horton',sec:'Real Estate - Homebuilding',out:'Average',pri:3,edge:'Largest US homebuilder; entry-level focus; land bank advantage',comp:'Lennar Corporation',earn:'Housing shortage supports demand despite rate headwinds',act:'Hold',str:'Scale purchasing power; entry-level affordability focus',wk:'Mortgage rate sensitivity; land cost inflation',opp:'Housing shortage; first-time buyer demand',thr:'Rising rates reducing affordability; tariffs on materials',cat:'FY2026 closings guidance maintained; rate buydowns supporting demand',up:'10-18%',rat:3},
+  {t:'VLO',n:'Valero Energy',sec:'Energy - Refining',out:'Average',pri:3,edge:'Largest US refiner; renewable diesel (Diamond Green Diesel) optionality',comp:'Phillips 66 - comparable refiner',earn:'Crack spread recovery; renewable diesel IRA credits',act:'Hold',str:'Scale + renewable diesel optionality; strong FCF + buybacks',wk:'Crack spread volatility; EV transition long-term risk',opp:'Renewable diesel IRA blending credits; jet fuel demand growth',thr:'Demand destruction from EVs; crude oil volatility',cat:'Diamond Green Diesel record volumes; Q1 2026 buyback acceleration',up:'12-18%',rat:3},
+  {t:'HNRG',n:'Hallador Energy',sec:'Energy - Power / Data Center Pivot',out:'Average',pri:3,edge:'Pivoting from coal to data center power provider (Hallador Power)',comp:'Clearway Energy (CWEN) - renewable',earn:'Data center power contracts pending; pivot underway',act:'Hold',str:'Pivot to data center power provider; owned power plants',wk:'Legacy coal stigma; ESG constraints on financing; small cap',opp:'AI data center power demand explosion; colocation power',thr:'ESG investor restrictions; coal phase-out regulation',cat:'Data center power LOIs announced; utility-scale power contracts',up:'15-25%',rat:3},
+  {t:'ALGN',n:'Align Technology',sec:'Medical Devices - Orthodontics',out:'Average',pri:3,edge:'Invisalign market leader; iTero digital scanning platform',comp:'Envista Holdings (Ormco)',earn:'Teen market expansion; Q1 2026 volume recovery in US',act:'Hold',str:'Invisalign brand dominance; iTero ecosystem stickiness',wk:'Chinese Angelalign competition; consumer spending sensitivity',opp:'Teen clear aligner market growing; digital orthodontics',thr:'Low-cost Asian competition; pricing pressure',cat:'China market stabilizing; teen case starts +15%; GP adoption growing',up:'15-22%',rat:3},
+  {t:'YETI',n:'YETI Holdings',sec:'Consumer - Outdoor/Lifestyle',out:'Average',pri:3,edge:'Premium cooler/drinkware brand; DTC + corporate gifting channel',comp:"Stanley (Pacific Market Int'l)",earn:'Q1 2026 seasonal lift; DTC margin improvement',act:'Hold',str:'Strong brand loyalty; ASP premium 3-5x mass market',wk:'Consumer spending slowdown; competition intensifying',opp:'International expansion; corporate gifting market',thr:'Tariffs on imports; Stanley brand eating market share',cat:'Q1 2026 DTC channel +20%; gross margin expansion to 58%',up:'10-18%',rat:3},
+  {t:'BLDR',n:'Builders FirstSource',sec:'Industrials - Building Materials',out:'Average',pri:3,edge:'Largest US building products distributor + value-added manufacturing',comp:'ABC Supply - private competitor',earn:'Housing starts recovery; data center construction demand',act:'Hold',str:'Scale + value-added manufacturing; #1 market position',wk:'Mortgage rate sensitivity; commodity lumber exposure',opp:'Housing shortage; AI data center construction materials',thr:'Lumber price volatility; rate-driven demand reduction',cat:'Data center structural components +40% YoY; Q1 in-line',up:'12-18%',rat:3},
+  {t:'KNSA',n:'Kiniksa Pharmaceuticals',sec:'Biotech - Immunology',out:'Average',pri:3,edge:'ARCALYST (rilonacept) for recurrent pericarditis; mavrilimumab Phase 3',comp:'AbbVie (adalimumab) - scale',earn:'Mavrilimumab Phase 3 readout 2026; ARCALYST growth',act:'Hold',str:'ARCALYST pericarditis monopoly; mavrilimumab pipeline optionality',wk:'Small pipeline; mavrilimumab Phase 3 risk',opp:'Giant cell arteritis large unmet need; cardiovascular immunology',thr:'Trial failure risk; limited pipeline depth',cat:'ARCALYST revenue +25%; mavrilimumab Phase 3 enrollment complete',up:'12-22%',rat:3},
+  {t:'AXTI',n:'AXT Inc',sec:'Semiconductors - Substrates',out:'Average',pri:3,edge:'GaAs/InP compound semiconductor substrates for optical transceivers',comp:'IQE plc',earn:'AI optical transceiver demand driving InP substrate orders',act:'Hold',str:'Critical materials for optical interconnects and 5G',wk:'China manufacturing exposure; tiny market cap (~$100M)',opp:'AI data center optical boom; InP for coherent transceivers',thr:'Supply chain risk; customer concentration',cat:'InP substrate orders up; AI transceiver substrate qualification wins',up:'15-20%',rat:4},
+  {t:'RDW',n:'Redwire Corp',sec:'Aerospace & Defense - Space',out:'Average',pri:3,edge:'In-space manufacturing, solar arrays for ISS; classified DoD contracts',comp:'RKLB (Rocket Lab)',earn:'DoD contract awards; revenue visibility improving',act:'Hold',str:'Unique in-space manufacturing; government contract base',wk:'Persistent losses; dilution risk; complex tech development',opp:'Commercial space station market; lunar economy',thr:'Launch delays; funding needs; space program budget cuts',cat:'NASA OSAM-1 missions; Phantom Space partnership',up:'10-18%',rat:4},
+  {t:'MRAM',n:'Everspin Technologies',sec:'Semiconductors - MRAM Memory',out:'Average',pri:3,edge:'Spin-transfer torque MRAM non-volatile memory for industrial/IoT',comp:'Infineon (STT-MRAM) - scale',earn:'Industrial/IoT edge AI memory demand; new customer wins',act:'Hold',str:'MRAM technology differentiation; non-volatile, fast, high endurance',wk:'Very small cap (~$60M); limited liquidity; niche market',opp:'AI edge inference memory; data storage reliability',thr:'Commoditization; limited scale; development delays',cat:'New MRAM industrial design-wins; Q1 2026 revenue in-line',up:'10-18%',rat:4},
+  {t:'SPT',n:'Sprout Social',sec:'Software - Social Media Mgmt',out:'Weak',pri:4,edge:'Social media management platform with AI publishing features',comp:'HubSpot - better profitability',earn:'Slowing enterprise adds; negative FCF; CEO transition',act:"Don't Buy",str:'Clean UI; strong SMB brand; AI scheduling features',wk:'Negative free cash flow; intense competition; slowing growth',opp:'Social commerce integration; AI content creation',thr:'Native platform tools from Meta/LinkedIn; Hootsuite competition',cat:'Q1 2026 revenue miss; guidance cut; CEO transition noise',up:'0-5%',rat:5},
+  {t:'SHLS',n:'Shoals Technologies',sec:'Clean Energy - Balance of System',out:'Weak',pri:4,edge:'Solar EBOS wiring harnesses for utility-scale solar',comp:'Nexans - scale',earn:'Warranty issues dragging; margin pressure from competition',act:"Don't Buy",str:'Specialized solar wiring; large utility-scale installed base',wk:'Warranty liabilities; margin erosion; competition intensifying',opp:'Solar installation volume growth',thr:'Price competition; warranty reserves weighing on results',cat:'Q4 2025 warranty charge cut guidance; margin contraction',up:'5-10%',rat:5},
+  {t:'AVNS',n:'Avanos Medical',sec:'Medical Devices - Pain Management',out:'Weak',pri:4,edge:'Chronic pain management devices; ON-Q nerve block system',comp:'Medtronic - scale and breadth',earn:'Revenue flat; restructuring ongoing; weak guidance',act:"Don't Buy",str:'Pain management niche; hospital relationships',wk:'Revenue decline; loss of market share; restructuring drag',opp:'Post-surgical pain management growth',thr:'Competition from larger device makers; hospital budget pressure',cat:'Q4 2025 revenue miss; cost cuts offset growth',up:'5-10%',rat:5},
+  {t:'ORGO',n:'Organogenesis',sec:'Medical - Regenerative Medicine',out:'Weak',pri:4,edge:'Advanced wound care biologics; PuraPly and Apligraf products',comp:'MiMedx - comparable wound care',earn:'CMS reimbursement headwinds; revenue declining',act:"Don't Buy",str:'FDA-approved advanced wound care products; hospital relationships',wk:'CMS reimbursement cuts; declining revenue; loss-making',opp:'Diabetic wound care market growing',thr:'CMS policy risk; competition from cheaper alternatives',cat:'CMS 2025 reimbursement cut impacted Q1 heavily; guidance cut',up:'0-8%',rat:5},
+  {t:'UAMY',n:'US Antimony Corp',sec:'Materials - Strategic Minerals',out:'Weak',pri:4,edge:'US antimony mining; strategic mineral for military/flame retardants',comp:'China Hunan Chaoyang - dominant supplier',earn:'Strategic mineral designation; potential government contracts',act:"Don't Buy",str:'US-based strategic antimony supply; military/defense designation',wk:'Tiny market cap (<$50M); very volatile; no profitability',opp:'US strategic mineral independence; China export restrictions',thr:'China flooding market; no guaranteed government contracts',cat:'China antimony export ban creating opportunity; defense interest',up:'0-20%',rat:5},
+];
+
+function parseUp(s){const m=s.match(/(\d+)-?(\d+)?%/);if(!m)return 0;return m[2]?(+m[1]+ +m[2])/2:+m[1];}
+const RC={1:'#378ADD',2:'#639922',3:'#888780',4:'#BA7517',5:'#E24B4A'};
+const RL={1:'Aggressive entry',2:'Accumulate',3:'Hold',4:'Reduce',5:"Don't buy"};
+const BC={1:'b1',2:'b2',3:'b3',4:'b4',5:'b5'};
+const OC={'Very Strong':'#639922','Strong':'#378ADD','Average':'#BA7517','Weak':'#E24B4A'};
+
+let activeR='all',searchQ='',sortBy='rating',expandedRow=null;
+
+function getFiltered(){
+  return stocks.filter(s=>{
+    const rm=activeR==='all'||(activeR==='1'&&s.rat===1)||(activeR==='2'&&s.rat===2)||(activeR==='3'&&s.rat===3)||(activeR==='45'&&s.rat>=4);
+    const q=searchQ.toLowerCase();
+    const sm=!q||s.t.toLowerCase().includes(q)||s.n.toLowerCase().includes(q)||s.sec.toLowerCase().includes(q)||s.cat.toLowerCase().includes(q)||s.edge.toLowerCase().includes(q)||s.comp.toLowerCase().includes(q);
+    return rm&&sm;
+  });
+}
+
+function getSorted(arr){
+  return [...arr].sort((a,b)=>{
+    if(sortBy==='rating')return a.rat-b.rat||b.pri-a.pri;
+    if(sortBy==='upside')return parseUp(b.up)-parseUp(a.up);
+    if(sortBy==='ticker')return a.t.localeCompare(b.t);
+    if(sortBy==='outlook'){const o=['Very Strong','Strong','Average','Weak'];return o.indexOf(a.out)-o.indexOf(b.out);}
+    return 0;
+  });
+}
+
+function pipHtml(pri){let h='<span class="priority-pip">';for(let i=1;i<=4;i++)h+=`<span class="pip${i<=pri?' on':''}"></span>`;return h+'</span>';}
+
+function renderTable(){
+  const filtered=getSorted(getFiltered());
+  const tbody=document.getElementById('tableBody');
+  const empty=document.getElementById('emptyMsg');
+  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const maxUp=65;
+  tbody.innerHTML=filtered.map((s,i)=>{
+    const up=parseUp(s.up);
+    const pct=Math.round((up/maxUp)*100);
+    const outDot=`<span class="outlook-dot" style="background:${OC[s.out]||'#888'}"></span>`;
+    return `<tr data-idx="${i}" onclick="toggleExpand(this,${i})">
+      <td><div class="ticker-lbl">${s.t}</div><div class="company-lbl">${s.n}</div></td>
+      <td><span class="sector-tag">${s.sec}</span></td>
+      <td style="white-space:nowrap">${outDot}<span style="font-size:11px;color:var(--tx2)">${s.out}</span></td>
+      <td>${pipHtml(s.pri)}</td>
+      <td><span class="badge ${BC[s.rat]}">${RL[s.rat]}</span></td>
+      <td style="font-size:11px;color:var(--tx2)">${s.act}</td>
+      <td><div class="ubar-wrap"><div class="ubar-bg"><div class="ubar-fill" style="width:${pct}%;background:${RC[s.rat]}"></div></div><span class="ubar-val">${s.up}</span></div></td>
+      <td><span class="competitor-tag">${s.comp}</span></td>
+    </tr>
+    <tr class="expand-row" id="exp-${i}">
+      <td class="expand-cell" colspan="8">
+        <div class="expand-inner">
+          <div class="exp-block s"><div class="exp-label">Strengths</div><div class="exp-text">${s.str}</div></div>
+          <div class="exp-block w"><div class="exp-label">Weaknesses</div><div class="exp-text">${s.wk}</div></div>
+          <div class="exp-block o"><div class="exp-label">Opportunities</div><div class="exp-text">${s.opp}</div></div>
+          <div class="exp-block t"><div class="exp-label">Threats</div><div class="exp-text">${s.thr}</div></div>
+          <div class="exp-full exp-two"><div class="exp-label">Competitive edge</div><div class="exp-text">${s.edge}</div></div>
+          <div class="exp-full exp-two"><div class="exp-label">Upcoming earnings / catalyst</div><div class="exp-text">${s.earn}</div></div>
+          <div class="exp-full" style="grid-column:1/-1"><div class="exp-label">Recent catalysts &amp; deals</div><div class="exp-text">${s.cat}</div></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleExpand(row,i){
+  const expRow=document.getElementById(`exp-${i}`);
+  const isOpen=expRow.classList.contains('open');
+  document.querySelectorAll('.expand-row.open').forEach(r=>r.classList.remove('open'));
+  document.querySelectorAll('tbody tr.expanded').forEach(r=>r.classList.remove('expanded'));
+  if(!isOpen){expRow.classList.add('open');row.classList.add('expanded');}
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeR=btn.dataset.r;
+    renderTable();
+  });
+});
+document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.target.value.trim();renderTable();});
+document.getElementById('sortSelect').addEventListener('change',e=>{sortBy=e.target.value;renderTable();});
+
+renderTable();
+
+// Charts
+new Chart(document.getElementById('convChart').getContext('2d'),{
+  type:'doughnut',
+  data:{labels:['Aggressive entry','Accumulate','Hold','Reduce',"Don't buy"],datasets:[{data:[21,50,26,7,5],backgroundColor:['#378ADD','#639922','#888780','#BA7517','#E24B4A'],borderWidth:0,hoverOffset:4}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} stocks`}}},cutout:'62%'}
+});
+
+new Chart(document.getElementById('sectorChart').getContext('2d'),{
+  type:'bar',
+  data:{labels:['Semiconductors','Biotech','Industrials','Technology','Semicon. Equip.','Software','Energy','Medical Devices','Clean Energy','Healthcare'],datasets:[{data:[12,11,8,8,8,7,6,5,4,3],backgroundColor:'#378ADD',borderRadius:3,borderSkipped:false}]},
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} stocks`}}},scales:{x:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+
+const r1u=stocks.filter(s=>s.rat===1).map(s=>parseUp(s.up));
+const r2u=stocks.filter(s=>s.rat===2).map(s=>parseUp(s.up));
+const r3u=stocks.filter(s=>s.rat>=3).map(s=>parseUp(s.up));
+const avg=a=>Math.round(a.reduce((x,y)=>x+y,0)/a.length);
+new Chart(document.getElementById('upsideChart').getContext('2d'),{
+  type:'bar',
+  data:{labels:['Rating 1 — Aggressive entry','Rating 2 — Accumulate','Rating 3+ — Hold / Reduce / Avoid'],datasets:[{data:[avg(r1u),avg(r2u),avg(r3u)],backgroundColor:['#378ADD','#639922','#888780'],borderRadius:4,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` Avg midpoint: ${ctx.raw}%`}}},scales:{y:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},callback:v=>v+'%'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+
+// TAB SWITCHING
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
