@@ -33,8 +33,12 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg3);color:var(--tx);min-height:100vh;line-height:1.5;font-size:14px}
 
 /* HEADER */
-header{background:var(--bg);border-bottom:0.5px solid var(--bd);padding:0.875rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100}
-.logo-svg{height:40px;width:auto}
+header{background:var(--bg);border-bottom:0.5px solid var(--bd);padding:0.875rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo-svg{height:40px;width:auto;flex-shrink:0}
+.header-title-wrap{display:flex;flex-direction:column;justify-content:center}
+.header-big-title{font-size:22px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(90deg,#0C447C 0%,#378ADD 40%,#E07820 75%,#FAC775 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;white-space:nowrap}
+.header-big-sub{font-size:10px;color:var(--tx3);margin-top:2px;letter-spacing:0.04em}
 .header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .header-meta{font-size:11px;color:var(--tx3)}
 .badge-disclaimer{font-size:10px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--bd2);color:var(--tx3);background:var(--bg2)}
@@ -169,7 +173,8 @@ tbody td{padding:9px 12px;color:var(--tx);vertical-align:middle}
 <body>
 
 <header>
-  <!-- ODS Investors Logo -->
+  <div class="header-left">
+    <!-- ODS Investors Logo -->
   <svg class="logo-svg" viewBox="0 0 340 50" role="img" xmlns="http://www.w3.org/2000/svg">
     <title>ODS Investors</title>
     <style>
@@ -206,8 +211,12 @@ tbody td{padding:9px 12px;color:var(--tx);vertical-align:middle}
       <rect class="lac" x="32" y="22" width="28" height="1.5" rx="0.75"/>
     </g>
   </svg>
+    <div class="header-title-wrap">
+      <div class="header-big-title">ODS Investors Dashboard</div>
+      <div class="header-big-sub">2–3 month horizon &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; 102 stocks</div>
+    </div>
+  </div>
   <div class="header-right">
-    <span class="header-meta">2–3 month horizon &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; 102 stocks</span>
     <span class="badge-disclaimer">NOT FINANCIAL ADVICE</span>
   </div>
 </header>
